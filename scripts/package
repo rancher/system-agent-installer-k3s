@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e -x
+
+source $(dirname $0)/version
+
+cd $(dirname $0)/..
+
+IMAGE=${REPO}/system-agent-installer-k3s:${VERSION}-${ARCH}
+DOCKERFILE=package/Dockerfile
+
+docker build -f ${DOCKERFILE} -t ${IMAGE} .
+echo Built ${IMAGE}
