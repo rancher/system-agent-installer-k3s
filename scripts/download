@@ -10,7 +10,7 @@ cd $(dirname $0)/..
 mkdir -p artifacts
 
 if [ -z "${LOCAL_ARTIFACTS}" ]; then
-    curl -fL https://raw.githubusercontent.com/k3s-io/k3s/${URI_VERSION}/install.sh > artifacts/installer.sh
+    curl -fL https://raw.githubusercontent.com/k3s-io/k3s/master/install.sh > artifacts/installer.sh
     chmod +x artifacts/installer.sh
     pushd artifacts
     if [ "${ARCH}" = "amd64" ]; then
