@@ -14,7 +14,7 @@ if [ -f "${RESTART_STAMP_FILE}" ]; then
     PRIOR_RESTART_STAMP=$(cat "${RESTART_STAMP_FILE}");
 fi
 
-if [ "${PRIOR_RESTART_STAMP}" != "${RESTART_STAMP}" ]; then
+if [ -n "${RESTART_STAMP}" ] && [ "${PRIOR_RESTART_STAMP}" != "${RESTART_STAMP}" ]; then
     FORCE_RESTART=true
 else
     FORCE_RESTART=false
@@ -22,4 +22,6 @@ fi
 
 env "INSTALL_K3S_FORCE_RESTART=${FORCE_RESTART}" "INSTALL_K3S_SKIP_DOWNLOAD=true" "INSTALL_K3S_SKIP_SELINUX_RPM=true" "INSTALL_K3S_SELINUX_WARN=true" installer.sh $@
 
-echo "${RESTART_STAMP}" > "${RESTART_STAMP_FILE}"
+if [ -n "${RESTART_STAMP}" ]; then
+    echo "${RESTART_STAMP}" > "${RESTART_STAMP_FILE}"
+fi
