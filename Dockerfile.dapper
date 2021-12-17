@@ -1,6 +1,7 @@
 FROM debian:buster
 
-ENV ARCH amd64
+ARG DAPPER_HOST_ARCH
+ENV ARCH=${DAPPER_HOST_ARCH}
 
 RUN apt-get update && \
     apt-get install -y apt-transport-https ca-certificates gnupg wget curl
@@ -10,7 +11,15 @@ RUN wget -O - https://download.docker.com/linux/debian/gpg | apt-key add - && \
     cat /etc/apt/sources.list
 
 RUN apt-get update && \
-    apt-get install -y docker-ce bash git jq
+    apt-get install -y bash git jq
+
+RUN if [ "${ARCH}" = "s390x" ]; then \
+        curl -L https://download.docker.com/linux/static/stable/s390x/docker-18.06.3-ce.tgz | tar xzvf - && \
+        cp docker/docker /usr/bin/ && \
+        chmod +x /usr/bin/docker; \
+    else \
+        apt-get install -y docker-ce; \
+    fi
 
 ENV DAPPER_ENV REPO OS ARCH TAG DRONE_TAG LOCAL_ARTIFACTS DOCKER_USERNAME DOCKER_PASSWORD
 ENV DAPPER_SOURCE /go/src/github.com/rancher/system-agent-installer-k3s/

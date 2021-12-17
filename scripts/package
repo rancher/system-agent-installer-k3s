@@ -7,6 +7,6 @@ cd $(dirname $0)/..
 
 DOCKERFILE=package/Dockerfile
 
-DOCKER_BUILDKIT=${DOCKER_BUILDKIT:-1} docker image build -f ${DOCKERFILE} -t ${IMAGE}-${OS}-${ARCH} .
+docker image build -f ${DOCKERFILE} -t ${IMAGE}-${OS}-${ARCH} .
 
 echo Built ${IMAGE}-${OS}-${ARCH}

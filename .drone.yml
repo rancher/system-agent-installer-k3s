@@ -46,24 +46,38 @@ volumes:
 
 ---
 kind: pipeline
-name: manifest
+type: docker
+name: build-linux-s390x
+
+# Hack needed for s390x: https://gist.github.com/colstrom/c2f359f72658aaabb44150ac20b16d7c#gistcomment-3858388
+node:
+  arch: s390x
 
 platform:
   os: linux
   arch: amd64
-depends_on:
-  - build-linux-amd64
 
 steps:
-- name: publish-manifest-list
-  image: rancher/dapper:v0.5.6
-  commands:
-  - dapper -f Dockerfile.dapper scripts/manifest
+- name: build-linux-s390x
+  image: rancher/dapper:v0.5.8
   environment:
+    ARCH: s390x
+  commands:
+  - dapper -f Dockerfile.dapper scripts/build
+  volumes:
+    - name: docker
+      path: /var/run/docker.sock
+
+- name: publish-linux-s390x
+  image: rancher/dapper:v0.5.8
+  environment:
+    ARCH: s390x
     DOCKER_PASSWORD:
       from_secret: docker_password
     DOCKER_USERNAME:
       from_secret: docker_username
+  commands:
+  - dapper -f Dockerfile.dapper scripts/publish
   volumes:
     - name: docker
       path: /var/run/docker.sock
@@ -74,7 +88,46 @@ steps:
       - refs/tags/*
     event:
       - tag
+
 volumes:
 - name: docker
   host:
     path: /var/run/docker.sock
+
+---
+kind: pipeline
+type: docker
+name: manifest
+
+platform:
+  os: linux
+  arch: amd64
+
+depends_on:
+  - build-linux-amd64
+  - build-linux-s390x
+
+steps:
+  - name: push-manifest
+    image: plugins/manifest
+    settings:
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      spec: manifest.tmpl
+    volumes:
+      - name: docker
+        path: /var/run/docker.sock
+    when:
+      instance:
+        - drone-publish.rancher.io
+      ref:
+        - refs/tags/*
+      event:
+        - tag
+
+volumes:
+  - name: docker
+    host:
+      path: /var/run/docker.sock
