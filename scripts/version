@@ -9,7 +9,7 @@ if [ -z "$OS" ]; then
     OS="linux"
 fi
 
-FALLBACK_VERSION=v1.20.5+k3s1
+FALLBACK_VERSION=v1.21.13+k3s1
 
 # This version script expects either a tag of format: <k3s-version> or no tag at all.
 
