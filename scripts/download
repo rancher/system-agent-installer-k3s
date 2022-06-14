@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -ex
 
 source $(dirname $0)/version
 
@@ -10,13 +10,13 @@ cd $(dirname $0)/..
 mkdir -p artifacts
 
 if [ -z "${LOCAL_ARTIFACTS}" ]; then
-    curl -fL https://raw.githubusercontent.com/k3s-io/k3s/master/install.sh > artifacts/installer.sh
+    curl -sfL -R -o artifacts/installer.sh https://raw.githubusercontent.com/k3s-io/k3s/master/install.sh
     chmod +x artifacts/installer.sh
     pushd artifacts
     if [ "${ARCH}" = "amd64" ]; then
-        curl -fL -O -R https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s
+        curl -sfL -R -o k3s https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s
     else
-        curl -fL -O -R -o k3s https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s-${ARCH}
+        curl -sfL -R -o k3s https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s-${ARCH}
     fi
     popd
 else

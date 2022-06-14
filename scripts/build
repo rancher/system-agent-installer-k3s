@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -ex
 
 cd $(dirname $0)
 
