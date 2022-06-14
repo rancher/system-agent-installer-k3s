@@ -47,6 +47,98 @@ volumes:
 ---
 kind: pipeline
 type: docker
+name: build-linux-arm64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: build-linux-arm64
+  image: rancher/dapper:v0.4.1
+  environment:
+    ARCH: arm64
+  commands:
+  - dapper -f Dockerfile.dapper scripts/build
+  volumes:
+    - name: docker
+      path: /var/run/docker.sock
+
+- name: publish-linux-arm64
+  image: rancher/dapper:v0.4.1
+  environment:
+    ARCH: arm64
+    DOCKER_PASSWORD:
+      from_secret: docker_password
+    DOCKER_USERNAME:
+      from_secret: docker_username
+  commands:
+  - dapper -f Dockerfile.dapper scripts/publish
+  volumes:
+    - name: docker
+      path: /var/run/docker.sock
+  when:
+    instance:
+      - drone-publish.rancher.io
+    ref:
+      - refs/tags/*
+    event:
+      - tag
+
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+
+---
+kind: pipeline
+type: docker
+name: build-linux-arm
+
+platform:
+  os: linux
+  arch: arm
+
+steps:
+- name: build-linux-arm
+  image: rancher/dapper:v0.4.1
+  environment:
+    ARCH: arm
+  commands:
+  - dapper -f Dockerfile.dapper scripts/build
+  volumes:
+    - name: docker
+      path: /var/run/docker.sock
+
+- name: publish-linux-arm
+  image: rancher/dapper:v0.4.1
+  environment:
+    ARCH: arm
+    DOCKER_PASSWORD:
+      from_secret: docker_password
+    DOCKER_USERNAME:
+      from_secret: docker_username
+  commands:
+  - dapper -f Dockerfile.dapper scripts/publish
+  volumes:
+    - name: docker
+      path: /var/run/docker.sock
+  when:
+    instance:
+      - drone-publish.rancher.io
+    ref:
+      - refs/tags/*
+    event:
+      - tag
+
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+
+---
+kind: pipeline
+type: docker
 name: build-linux-s390x
 
 # Hack needed for s390x: https://gist.github.com/colstrom/c2f359f72658aaabb44150ac20b16d7c#gistcomment-3858388
@@ -105,6 +197,8 @@ platform:
 
 depends_on:
   - build-linux-amd64
+  - build-linux-arm64
+  - build-linux-arm
   - build-linux-s390x
 
 steps:
