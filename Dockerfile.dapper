@@ -17,6 +17,10 @@ RUN if [ "${ARCH}" = "s390x" ]; then \
         curl -L https://download.docker.com/linux/static/stable/s390x/docker-18.06.3-ce.tgz | tar xzvf - && \
         cp docker/docker /usr/bin/ && \
         chmod +x /usr/bin/docker; \
+    elif [ "${ARCH}" = "arm" ]; then \
+        curl -L https://download.docker.com/linux/static/stable/armhf/docker-18.06.3-ce.tgz | tar xzvf - && \
+        cp docker/docker /usr/bin/ && \
+        chmod +x /usr/bin/docker; \
     else \
         apt-get install -y docker-ce; \
     fi

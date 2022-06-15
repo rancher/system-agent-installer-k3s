@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -ex
 
 source $(dirname $0)/version
 
@@ -9,16 +9,23 @@ cd $(dirname $0)/..
 
 mkdir -p artifacts
 
-if [ -z "${LOCAL_ARTIFACTS}" ]; then
-    curl -fL https://raw.githubusercontent.com/k3s-io/k3s/master/install.sh > artifacts/installer.sh
+if [[ -z "${LOCAL_ARTIFACTS}" ]]; then
+    curl -sfL -R -o artifacts/installer.sh https://raw.githubusercontent.com/k3s-io/k3s/master/install.sh
     chmod +x artifacts/installer.sh
-    pushd artifacts
-    if [ "${ARCH}" = "amd64" ]; then
-        curl -fL -O -R https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s
-    else
-        curl -fL -O -R -o k3s https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s-${ARCH}
+
+    if [[ "${ARCH}" = "s390x" ]] && [[ "${VERSION}" =~ ^v1\.(20|21)\. ]]; then
+        echo "Skipping s390x - not supported for this version."
+        exit
     fi
-    popd
+
+    if [[ "${ARCH}" = "amd64" ]]; then
+        SUFFIX=""
+    elif [[ "${ARCH}" = "arm" ]]; then
+        SUFFIX="-${ARCH}hf"
+    else
+        SUFFIX="-${ARCH}"
+    fi
+    curl -sfL -R -o artifacts/k3s https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s${SUFFIX}
 else
     cp local/* artifacts
     chmod +x artifacts/installer.sh
