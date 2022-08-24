@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:buster-20220801
 
 ARG DAPPER_HOST_ARCH
 ENV ARCH=${DAPPER_HOST_ARCH}
