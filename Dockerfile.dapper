@@ -3,15 +3,13 @@ FROM debian:buster-20220801
 ARG DAPPER_HOST_ARCH
 ENV ARCH=${DAPPER_HOST_ARCH}
 
-RUN apt-get update && \
-    apt-get install -y apt-transport-https ca-certificates gnupg wget curl
+RUN apt-get install -y apt-transport-https ca-certificates gnupg wget curl
 
 RUN wget -O - https://download.docker.com/linux/debian/gpg | apt-key add - && \
     echo "deb [arch=${ARCH}] https://download.docker.com/linux/debian buster stable" >> /etc/apt/sources.list && \
     cat /etc/apt/sources.list
 
-RUN apt-get update && \
-    apt-get install -y bash git jq
+RUN apt-get install -y bash git jq
 
 RUN if [ "${ARCH}" = "s390x" ]; then \
         curl -L https://download.docker.com/linux/static/stable/s390x/docker-18.06.3-ce.tgz | tar xzvf - && \
