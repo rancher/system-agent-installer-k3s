@@ -8,3 +8,11 @@ manifests:
     platform:
       architecture: s390x
       os: linux
+  - image: rancher/system-agent-installer-k3s:{{replace "+" "-" build.tag}}-linux-arm
+    platform:
+      architecture: arm
+      os: linux
+  - image: rancher/system-agent-installer-k3s:{{replace "+" "-" build.tag}}-linux-arm64
+    platform:
+      architecture: arm64
+      os: linux
