@@ -99,9 +99,13 @@ platform:
   os: linux
   arch: arm
 
+clone:
+  disable: true
+
 steps:
 - name: build-linux-arm
   image: rancher/dapper:v0.4.1
+  failure: ignore
   environment:
     ARCH: arm
   commands:
@@ -112,6 +116,7 @@ steps:
 
 - name: publish-linux-arm
   image: rancher/dapper:v0.4.1
+  failure: ignore
   environment:
     ARCH: arm
     DOCKER_PASSWORD:
