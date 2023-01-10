@@ -139,7 +139,6 @@ volumes:
 - name: docker
   host:
     path: /var/run/docker.sock
-
 ---
 kind: pipeline
 type: docker
@@ -152,7 +151,6 @@ platform:
 depends_on:
   - build-linux-amd64
   - build-linux-arm64
-  - build-linux-arm
   - build-linux-s390x
 
 steps:
