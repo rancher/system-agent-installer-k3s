@@ -105,9 +105,6 @@ clone:
 steps:
 - name: clone
   image: drone/git:linux-arm
-  commands:
-  - git clone https://github.com/rancher/system-agent-installer-k3s.git
-  - git checkout $DRONE_COMMIT
 
 - name: build-linux-arm
   image: rancher/dapper:v0.4.1
