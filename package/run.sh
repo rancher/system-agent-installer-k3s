@@ -2,13 +2,15 @@
 
 set -x -e
 
+K3S_DATA_DIR=${K3S_DATA_DIR:-/var/lib/rancher/k3s}
+
 cp -f ${CATTLE_AGENT_EXECUTION_PWD}/k3s /usr/local/bin/k3s
 chmod 755 /usr/local/bin/k3s
 chown root:root /usr/local/bin/k3s
 
-mkdir -p /var/lib/rancher/k3s
+mkdir -p ${K3S_DATA_DIR}
 
-RESTART_STAMP_FILE=/var/lib/rancher/k3s/restart_stamp
+RESTART_STAMP_FILE=${K3S_DATA_DIR}/restart_stamp
 
 if [ -f "${RESTART_STAMP_FILE}" ]; then
     PRIOR_RESTART_STAMP=$(cat "${RESTART_STAMP_FILE}");
