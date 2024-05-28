@@ -2,9 +2,27 @@
 
 set -x -e
 
-cp -f ${CATTLE_AGENT_EXECUTION_PWD}/k3s /usr/local/bin/k3s
-chmod 755 /usr/local/bin/k3s
-chown root:root /usr/local/bin/k3s
+SA_INSTALL_PREFIX="/usr/local"
+
+# check_target_mountpoint return success if the target directory is on a dedicated mount point
+check_target_mountpoint() {
+    mountpoint -q "${SA_INSTALL_PREFIX}"
+}
+
+# check_target_ro returns success if the target directory is read-only
+check_target_ro() {
+    touch "${SA_INSTALL_PREFIX}"/.k3s-ro-test && rm -rf "${SA_INSTALL_PREFIX}"/.k3s-ro-test
+    test $? -ne 0
+}
+
+if check_target_mountpoint || check_target_ro; then
+    echo "${SA_INSTALL_PREFIX} is ro or a mount point"
+    SA_INSTALL_PREFIX="/opt"
+fi
+
+cp -f ${CATTLE_AGENT_EXECUTION_PWD}/k3s ${SA_INSTALL_PREFIX}/bin/k3s
+chmod 755 ${SA_INSTALL_PREFIX}/bin/k3s
+chown root:root ${SA_INSTALL_PREFIX}/bin/k3s
 
 mkdir -p /var/lib/rancher/k3s
 
