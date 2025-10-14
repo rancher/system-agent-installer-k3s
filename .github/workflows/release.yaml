@@ -179,4 +179,4 @@ jobs:
 
       - name: Inspect Prime image
         if: ${{ !contains(github.ref_name, '-rc') }}
-        run: docker buildx imagetools inspect ${{ env.PRIME_STAGING_REGISTRY }}/${{ env.IMAGE }}:${{ env.VERSION }}
+        run: docker buildx imagetools inspect ${{ env.PRIME_REGISTRY }}/${{ env.IMAGE }}:${{ env.VERSION }}
