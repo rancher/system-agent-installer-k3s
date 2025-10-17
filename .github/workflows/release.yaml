@@ -1,25 +1,27 @@
-name: CI on Releasing Tag
-
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [published]
+
+name: Release Build and Push
+permissions:
+    contents: read
+    id-token: write
 
 env:
-  IMAGE: rancher/system-agent-installer-k3s
-
-permissions:
-  contents: read
-  id-token: write # needed for the Vault authentication
+  IMAGE: system-agent-installer-k3s
+  REPO: rancher
 
 jobs:
   build-linux:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
-      matrix:
-        os: [ linux ]
-        arch: [ amd64, arm64 ]
+        fail-fast: true
+        matrix:
+          include:
+            - arch: amd64
+              os: linux
+            - arch: arm64
+              os: linux
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -32,6 +34,7 @@ jobs:
         run: |
           echo "ARCH=${{ matrix.arch }}" >> "$GITHUB_ENV"
           echo "OS=${{ matrix.os }}"     >> "$GITHUB_ENV"
+          echo "GIT_TAG=$(echo "${{ github.ref_name }}" | sed -e 's/+/-/g')" >> "$GITHUB_ENV"
 
       - name: Download installer
         run: scripts/download
@@ -56,11 +59,11 @@ jobs:
           GOARCH: ${{ matrix.arch }}
           GOOS: ${{ matrix.os }}
         with:
-          image: "system-agent-installer-k3s"
-          tag: ${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
+          image: ${{ env.IMAGE }}
+          tag: ${{ env.GIT_TAG }}-${{ matrix.os }}-${{ matrix.arch }}
           make-target: push-image
 
-          public-repo: rancher
+          public-repo: ${{ env.REPO }}
           public-username: ${{ env.DOCKER_USERNAME }}
           public-password: ${{ env.DOCKER_PASSWORD }}
           push-to-prime: false
@@ -73,13 +76,13 @@ jobs:
           GOOS: ${{ matrix.os }}
           PRIME_RIBS: ${{ env.PRIME_RIBS }}
         with:
-          image: "system-agent-installer-k3s"
-          tag: ${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
+          image: ${{ env.IMAGE }}
+          tag: ${{ env.GIT_TAG }}-${{ matrix.os }}-${{ matrix.arch }}
           make-target: push-image
 
           push-to-public: false
 
-          prime-repo: rancher
+          prime-repo: ${{ env.REPO }}
           prime-registry: ${{ env.PRIME_STAGING_REGISTRY }}
           prime-username: ${{ env.PRIME_STAGING_REGISTRY_USERNAME }}
           prime-password: ${{ env.PRIME_STAGING_REGISTRY_PASSWORD }}
@@ -92,13 +95,13 @@ jobs:
           GOOS: ${{ matrix.os }}
           PRIME_RIBS: ${{ env.PRIME_RIBS }}
         with:
-          image: "system-agent-installer-k3s"
-          tag: ${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
+          image: ${{ env.IMAGE }}
+          tag: ${{ env.GIT_TAG }}-${{ matrix.os }}-${{ matrix.arch }}
           make-target: push-image
 
           push-to-public: false
 
-          prime-repo: rancher
+          prime-repo: ${{ env.REPO }}
           prime-registry: ${{ env.PRIME_REGISTRY }}
           prime-username: ${{ env.PRIME_REGISTRY_USERNAME }}
           prime-password: ${{ env.PRIME_REGISTRY_PASSWORD }}
@@ -113,6 +116,10 @@ jobs:
       - name: Set environment variables
         run: |
           . scripts/version
+
+      - name: Set Release tag
+        run: |
+          echo "GIT_TAG=$(echo "${{ github.ref_name }}" | sed -e 's/+/-/g')" >> "$GITHUB_ENV"
 
       - name: Load secrets from Vault
         uses: rancher-eio/read-vault-secrets@main
@@ -131,52 +138,52 @@ jobs:
       - name: Publish Manifest - Docker
         uses: rancher/ecm-distro-tools/actions/publish-image@master
         with:
-          image: "system-agent-installer-k3s"
-          tag: ${{ github.ref_name }}
+          image: ${{ env.IMAGE }}
+          tag: ${{ env.GIT_TAG }}
           make-target: publish-manifest
 
-          public-repo: rancher
+          public-repo: ${{ env.REPO }}
           public-username: ${{ env.DOCKER_USERNAME }}
           public-password: ${{ env.DOCKER_PASSWORD }}
           push-to-prime: false
 
       - name: Inspect Docker image
-        run: docker buildx imagetools inspect ${{ env.IMAGE }}:${{ env.VERSION }}
+        run: docker buildx imagetools inspect ${{ env.REPO }}/${{ env.IMAGE }}:${{ env.GIT_TAG }}
 
       - name: Publish Manifest - Staging
         uses: rancher/ecm-distro-tools/actions/publish-image@master
         if: ${{ contains(github.ref_name, '-rc') }}
         with:
-          image: "system-agent-installer-k3s"
-          tag: ${{ github.ref_name }}
+          image: ${{ env.IMAGE }}
+          tag: ${{ env.GIT_TAG }}
           make-target: publish-manifest
 
           push-to-public: false
 
-          prime-repo: rancher
+          prime-repo: ${{ env.REPO }}
           prime-registry: ${{ env.PRIME_STAGING_REGISTRY }}
           prime-username: ${{ env.PRIME_STAGING_REGISTRY_USERNAME }}
           prime-password: ${{ env.PRIME_STAGING_REGISTRY_PASSWORD }}
 
       - name: Inspect Staging image
         if: ${{ contains(github.ref_name, '-rc') }}
-        run: docker buildx imagetools inspect ${{ env.PRIME_STAGING_REGISTRY }}/${{ env.IMAGE }}:${{ env.VERSION }}
+        run: docker buildx imagetools inspect ${{ env.PRIME_STAGING_REGISTRY }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.GIT_TAG }}
 
       - name: Publish Image - Prime
         uses: rancher/ecm-distro-tools/actions/publish-image@master
         if: ${{ !contains(github.ref_name, '-rc') }}
         with:
           image: "system-agent-installer-k3s"
-          tag: ${{ github.ref_name }}
+          tag: ${{ env.GIT_TAG }}
           make-target: publish-manifest
 
           push-to-public: false
 
-          prime-repo: rancher
+          prime-repo: ${{ env.REPO }}
           prime-registry: ${{ env.PRIME_REGISTRY }}
           prime-username: ${{ env.PRIME_REGISTRY_USERNAME }}
           prime-password: ${{ env.PRIME_REGISTRY_PASSWORD }}
 
       - name: Inspect Prime image
         if: ${{ !contains(github.ref_name, '-rc') }}
-        run: docker buildx imagetools inspect ${{ env.PRIME_REGISTRY }}/${{ env.IMAGE }}:${{ env.VERSION }}
+        run: docker buildx imagetools inspect ${{ env.PRIME_REGISTRY }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.GIT_TAG }}
