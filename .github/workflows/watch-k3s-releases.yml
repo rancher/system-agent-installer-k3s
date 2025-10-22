@@ -1,0 +1,107 @@
+name: Watch K3s Releases
+
+on:
+  schedule:
+    # Check for new releases every 2 hours
+    - cron: '0 */2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  check-new-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history to get all tags
+
+      - name: Process K3s releases
+        id: process-releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the last 50 K3s releases
+          RELEASES=$(curl -sL https://api.github.com/repos/k3s-io/k3s/releases | jq -r '[.[] | select(.assets[] | length > 2) | .tag_name] | unique | .[0:50][]')
+          
+          echo "Processing last 50 K3s releases:"
+          
+          RELEASES_TO_CREATE=()
+          
+          for K3S_VERSION in $RELEASES; do
+            echo ""
+            echo "Checking K3s release: $K3S_VERSION"
+            
+            # Check if we already have a tag for this version
+            if git rev-parse "$K3S_VERSION" >/dev/null 2>&1; then
+              echo "  Tag $K3S_VERSION already exists, skipping"
+              continue
+            fi
+            
+            echo "  Tag $K3S_VERSION does not exist, checking binaries"
+            
+            # Check for required binaries
+            ASSETS=$(curl -sL "https://api.github.com/repos/k3s-io/k3s/releases/tags/$K3S_VERSION" | jq -r '.assets[].name')
+            REQUIRED_BINARIES=("k3s" "k3s-arm64" "k3s-armhf")
+            MISSING_BINARIES=()
+            
+            for binary in "${REQUIRED_BINARIES[@]}"; do
+              if ! echo "$ASSETS" | grep -q "^${binary}$"; then
+                MISSING_BINARIES+=("$binary")
+              fi
+            done
+            
+            if [ ${#MISSING_BINARIES[@]} -gt 0 ]; then
+              echo "  Release $K3S_VERSION is missing required binaries: ${MISSING_BINARIES[*]}"
+              echo "  Skipping release creation until all binaries are published"
+            else
+              echo "  All required binaries present for $K3S_VERSION"
+              RELEASES_TO_CREATE+=("$K3S_VERSION")
+            fi
+          done
+          
+          if [ ${#RELEASES_TO_CREATE[@]} -gt 0 ]; then
+            echo "releases_to_create=$(printf '%s\n' "${RELEASES_TO_CREATE[@]}" | tr '\n' ' ' | sed 's/ $//')" >> $GITHUB_OUTPUT
+            echo "has_releases=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_releases=false" >> $GITHUB_OUTPUT
+            echo ""
+            echo "No new releases to create"
+          fi
+
+      - name: Read Vault secrets
+        if: steps.process-releases.outputs.has_releases == 'true'
+        uses: rancher-eio/read-vault-secrets@main
+        with:
+          secrets: |
+            secret/data/github/repo/${{ github.repository }}/github/app-credentials appId | APP_ID ;
+            secret/data/github/repo/${{ github.repository }}/github/app-credentials privateKey | PRIVATE_KEY ;
+
+      - name: Generate short-lived github app token
+        if: steps.process-releases.outputs.has_releases == 'true'
+        uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ env.APP_ID }}
+          private-key: ${{ env.PRIVATE_KEY }}
+
+      - name: Create Releases
+        if: steps.process-releases.outputs.has_releases == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          echo "Creating releases for the following K3s versions:"
+          echo "${{ steps.process-releases.outputs.releases_to_create }}"
+          echo ""
+
+          for K3S_VERSION in ${{ steps.process-releases.outputs.releases_to_create }}; do
+            echo "Creating release for $K3S_VERSION"
+            gh release create "$K3S_VERSION" \
+              --title "Release $K3S_VERSION" \
+              --notes "Automated release for K3s $K3S_VERSION"
+            echo "Successfully created release $K3S_VERSION"
+            echo ""
+          done
