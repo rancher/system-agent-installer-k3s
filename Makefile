@@ -26,6 +26,7 @@ ifndef TARGET_PLATFORMS
 endif
 
 TAG ?= ${TAG}
+PRIME_RIBS ?= ${PRIME_RIBS}
 
 export DOCKER_BUILDKIT?=1
 
@@ -39,7 +40,7 @@ BUILD_OPTS = \
 
 .PHONY: push-image
 push-image:
-	docker buildx build \
+	PRIME_RIBS=$(PRIME_RIBS) docker buildx build \
 		$(BUILD_OPTS) \
 		$(IID_FILE_FLAG) \
 		--sbom=true \
@@ -50,4 +51,4 @@ push-image:
 
 .PHONY: publish-manifest
 publish-manifest: ## Create and push the runtime manifest
-	./scripts/publish-manifest
+	IMAGE=$(IMAGE) ./scripts/publish-manifest
