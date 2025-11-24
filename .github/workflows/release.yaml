@@ -60,7 +60,7 @@ jobs:
           GOOS: ${{ matrix.os }}
         with:
           image: ${{ env.IMAGE }}
-          tag: ${{ env.GIT_TAG }}-${{ matrix.os }}-${{ matrix.arch }}
+          tag: ${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
           make-target: push-image
           platforms: ${{ matrix.os }}/${{ matrix.arch }}
 
@@ -78,7 +78,7 @@ jobs:
           PRIME_RIBS: ${{ env.PRIME_RIBS }}
         with:
           image: ${{ env.IMAGE }}
-          tag: ${{ env.GIT_TAG }}-${{ matrix.os }}-${{ matrix.arch }}
+          tag: ${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
           make-target: push-image
           platforms: ${{ matrix.os }}/${{ matrix.arch }}
 
@@ -98,7 +98,7 @@ jobs:
           PRIME_RIBS: ${{ env.PRIME_RIBS }}
         with:
           image: ${{ env.IMAGE }}
-          tag: ${{ env.GIT_TAG }}-${{ matrix.os }}-${{ matrix.arch }}
+          tag: ${{ github.ref_name }}-${{ matrix.os }}-${{ matrix.arch }}
           make-target: push-image
           platforms: ${{ matrix.os }}/${{ matrix.arch }}
 
@@ -142,7 +142,7 @@ jobs:
         uses: rancher/ecm-distro-tools/actions/publish-image@master
         with:
           image: ${{ env.IMAGE }}
-          tag: ${{ env.GIT_TAG }}
+          tag: ${{ github.ref_name }}
           make-target: publish-manifest
 
           public-repo: ${{ env.REPO }}
@@ -158,7 +158,7 @@ jobs:
         if: ${{ contains(github.ref_name, '-rc') }}
         with:
           image: ${{ env.IMAGE }}
-          tag: ${{ env.GIT_TAG }}
+          tag: ${{ github.ref_name }}
           make-target: publish-manifest
 
           push-to-public: false
@@ -177,7 +177,7 @@ jobs:
         if: ${{ !contains(github.ref_name, '-rc') }}
         with:
           image: "system-agent-installer-k3s"
-          tag: ${{ env.GIT_TAG }}
+          tag: ${{ github.ref_name }}
           make-target: publish-manifest
 
           push-to-public: false
