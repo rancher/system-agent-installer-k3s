@@ -71,7 +71,6 @@ jobs:
 
       - name: Publish Image - Staging
         uses: rancher/ecm-distro-tools/actions/publish-image@master
-        if: ${{ contains(github.ref_name, '-rc') }}
         env:
           GOARCH: ${{ matrix.arch }}
           GOOS: ${{ matrix.os }}
@@ -155,7 +154,6 @@ jobs:
 
       - name: Publish Manifest - Staging
         uses: rancher/ecm-distro-tools/actions/publish-image@master
-        if: ${{ contains(github.ref_name, '-rc') }}
         with:
           image: ${{ env.IMAGE }}
           tag: ${{ env.GIT_TAG }}
@@ -169,7 +167,6 @@ jobs:
           prime-password: ${{ env.PRIME_STAGING_REGISTRY_PASSWORD }}
 
       - name: Inspect Staging image
-        if: ${{ contains(github.ref_name, '-rc') }}
         run: docker buildx imagetools inspect ${{ env.PRIME_STAGING_REGISTRY }}/${{ env.REPO }}/${{ env.IMAGE }}:${{ env.GIT_TAG }}
 
       - name: Publish Image - Prime
