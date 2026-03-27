@@ -1,20 +1,41 @@
 #!/bin/bash
+set -ex
 
-# Compute the suffix to identify the architecture
-SUFFIX="$(uname -m)"
-# Set the expected downloaded filename
-EXPECTED_FILE="k3s"
+source $(dirname $0)/version
 
-# Modify the check to match the expected filename
-if ! grep -q "$EXPECTED_FILE" <<< "$(basename "${1}")"; then
-    echo "Downloaded file does not match expected file name: $EXPECTED_FILE"
-    exit 1
+cd $(dirname $0)/..
+
+# This script serves to download/stage the installer
+
+mkdir -p artifacts
+
+if [[ -z "${LOCAL_ARTIFACTS}" ]]; then
+    curl -sfL -R -o artifacts/installer.sh https://raw.githubusercontent.com/k3s-io/k3s/master/install.sh
+    chmod +x artifacts/installer.sh
+
+    if [[ "${ARCH}" = "s390x" ]] && [[ "${VERSION}" =~ ^v1\.(20|21)\. ]]; then
+        echo "Skipping s390x - not supported for this version."
+        exit
+    fi
+
+    if [[ "${ARCH}" = "amd64" ]]; then
+        SUFFIX=""
+    elif [[ "${ARCH}" = "arm" ]]; then
+        SUFFIX="-${ARCH}hf"
+    else
+        SUFFIX="-${ARCH}"
+    fi
+    pushd artifacts
+    if [ -n "${PRIME_RIBS}" ]; then
+        curl -sfL -R -o k3s https://${PRIME_RIBS}/k3s/${URI_VERSION}/k3s${SUFFIX}
+        curl -sfL -R -o sha256sum-${ARCH}.txt https://${PRIME_RIBS}/k3s/${URI_VERSION}/sha256sum-${ARCH}.txt
+    else
+        curl -sfL -R -o k3s https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/k3s${SUFFIX}
+        curl -sfL -R -o sha256sum-${ARCH}.txt https://github.com/k3s-io/k3s/releases/download/${URI_VERSION}/sha256sum-${ARCH}.txt
+    fi
+    grep -E "^[0-9a-f]+  k3s${SUFFIX}$" sha256sum-${ARCH}.txt | sha256sum -c -
+    popd
+else
+    cp local/* artifacts
+    chmod +x artifacts/installer.sh
 fi
-
-# Validate the checksum against the downloaded file
-echo "$EXPECTED_FILE  ${1}" | sha256sum -c - || {
-    echo "Checksum verification failed!";
-    exit 1;
-}
-
-# Continue with the installation or other operations...
